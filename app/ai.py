@@ -211,7 +211,9 @@ class RAGAgent:
                 top_p=top_p,
                 top_k=top_k,
                 do_sample=True if temperature > 0 else False,
-                pad_token_id=self.model.tokenizer.eos_token_id
+                pad_token_id=self.model.tokenizer.eos_token_id,
+                # Note: stop_sequence is not directly supported by transformers pipeline
+                # We'll handle stopping post-generation
             )
             
             # Extract the answer from the generated text
@@ -223,6 +225,12 @@ class RAGAgent:
             else:
                 # Fallback: remove the input prompt
                 answer = generated_text.replace(full_prompt, "").strip()
+            
+            # Stop at double newlines - this is our main stopping condition
+            if "\n\n" in answer:
+                # Find the first occurrence of double newlines and cut there
+                double_newline_pos = answer.find("\n\n")
+                answer = answer[:double_newline_pos].strip()
             
             return answer
             
